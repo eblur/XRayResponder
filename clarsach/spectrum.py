@@ -61,7 +61,7 @@ class XSpectrum(object):
         self.counts = new_cts
         self.bin_unit = unit
 
-    def plot(self, ax, xunit='keV', **kwargs):
+    def plot(self, ax, xunit='keV', ret=False, **kwargs):
         lo, hi, mid, cts = self._change_units(xunit)
         counts_err       = np.sqrt(cts)
         ax.errorbar(mid, cts, yerr=counts_err,
@@ -69,6 +69,9 @@ class XSpectrum(object):
         ax.step(lo, cts, where='post', **kwargs)
         ax.set_xlabel(UNIT_LABELS[xunit])
         ax.set_ylabel('Counts')
+        if ret:
+            return dict(zip(['lo','hi','mid','cts','cts_err'],
+                            [lo, hi, mid, cts, counts_err]))
 
     def _eff_exposure(self):
         no_mod  = np.ones(len(self.arf.specresp))
@@ -77,7 +80,7 @@ class XSpectrum(object):
         eff_exp *= self.exposure * self.arf.fracexpo
         return eff_exp  # cm^2 sec count phot^-1
 
-    def plot_unfold(self, ax, xunit='keV', **kwargs):
+    def plot_unfold(self, ax, xunit='keV', ret=False, **kwargs):
         eff_exp  = self._eff_exposure()  # cm^2 sec count phot^-1
 
         # Have to take account of zero values in effective exposure
@@ -97,6 +100,9 @@ class XSpectrum(object):
         ax.step(lo, flx, where='post', **kwargs)
         ax.set_xlabel(UNIT_LABELS[xunit])
         ax.set_ylabel('Flux [phot cm$^{-2}$ s$^{-1}$ bin$^{-1}$]')
+        if ret:
+            return dict(zip(['lo','hi','mid','flx','flx_err'],
+                            [lo, hi, mid, flx, fe]))
 
     def _read_chandra(self, filename):
         this_dir = os.path.dirname(os.path.abspath(filename))
