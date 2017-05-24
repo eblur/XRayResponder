@@ -70,6 +70,34 @@ class XSpectrum(object):
         ax.set_xlabel(UNIT_LABELS[xunit])
         ax.set_ylabel('Counts')
 
+    def _eff_exposure(self):
+        no_mod  = np.ones(len(self.arf.specresp))
+        area    = self.arf.apply_arf(no_mod)
+        eff_exp = self.rmf.apply_rmf(area)
+        eff_exp *= self.exposure * self.arf.fracexpo
+        return eff_exp  # cm^2 sec count phot^-1
+
+    def plot_unfold(self, ax, xunit='keV', **kwargs):
+        eff_exp  = self._eff_exposure()  # cm^2 sec count phot^-1
+
+        # Have to take account of zero values in effective exposure
+        flux, f_err = np.zeros(len(eff_exp)), np.zeros(len(eff_exp))
+        ii        = (eff_exp != 0.0)
+        flux[ii]  = self.counts[ii] / eff_exp[ii]
+        f_err[ii] = np.sqrt(self.counts[ii]) / eff_exp[ii]
+
+        # Now deal with desired xunit
+        lo, hi, mid, cts = self._change_units(xunit)
+        if self.bin_unit != xunit:
+            flx, fe = flux[::-1], f_err[::-1]
+        else:
+            flx, fe = flux, f_err
+        ax.errorbar(mid, flx, yerr=fe,
+                    ls='', marker=None, color='k', capsize=0, alpha=0.5)
+        ax.step(lo, flx, where='post', **kwargs)
+        ax.set_xlabel(UNIT_LABELS[xunit])
+        ax.set_ylabel('Flux [phot cm$^{-2}$ s$^{-1}$ bin$^{-1}$]')
+
     def _read_chandra(self, filename):
         this_dir = os.path.dirname(os.path.abspath(filename))
         ff   = fits.open(filename)
