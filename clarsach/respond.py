@@ -304,7 +304,7 @@ class ARF(object):
         # extract + store the attributes described in the docstring
 
         # Deal with units
-        bin_unit = data.columns["BIN_LO"].unit
+        bin_unit = data.columns["ENERG_LO"].unit
         if bin_unit in ANGS:
             self.bin_unit = si.Angstrom
         elif bin_unit in KEV:
@@ -313,8 +313,8 @@ class ARF(object):
             print("WARNING: %s is not a supported bin unit" % bin_unit)
             self.bin_unit = 1.0
 
-        self.bin_lo  = np.array(data.field("BIN_LO")) * self.bin_unit
-        self.bin_hi = np.array(data.field("BIN_HI")) * self.bin_unit
+        self.bin_lo  = np.array(data.field("ENERG_LO")) * self.bin_unit
+        self.bin_hi = np.array(data.field("ENERG_HI")) * self.bin_unit
         self.specresp = np.array(data.field("SPECRESP"))
 
         if "FRACEXPO" in data.columns.names:

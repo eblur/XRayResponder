@@ -97,8 +97,8 @@ class XSpectrum(object):
         ff.close()
 
         # Let's just keep everything in keV units
-        if self.bin_unit in ANGS:
-            self._setbins_to_keV()
+        #if self.bin_unit in ANGS:
+        #    self._setbins_to_keV()
         return
 
     def _setbins_to_keV(self):
