@@ -5,12 +5,9 @@ from clarsach.respond import RMF, ARF, _Angs_keV
 from astropy.io import fits
 from astropy.units import si
 
-CONST_HC = 12.398418573430595   # Copied from ISIS, [keV angs]
 KEV      = ['kev','keV']
 ANGS     = ['angs','angstrom','Angstrom','angstroms','Angstroms']
-
 ALLOWED_UNITS = KEV + ANGS
-ALLOWED_TELESCOPES = ['HETG','ACIS']
 
 __all__ = ['XSpectrum']
 
