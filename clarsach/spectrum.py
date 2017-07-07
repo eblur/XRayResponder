@@ -38,10 +38,10 @@ class XSpectrum(object):
 
     def apply_resp(self, mflux):
         # Given a model flux spectrum, apply the response
-        # mflux must be in units of phot/s/cm^2/keV
+        # mflux must be in units of phot/s/cm^2
         # 1. Apply ARF
-        phrate  = self.arf.apply_arf(mflux)  # phot/s/keV
-        phots   = phrate * self.exposure * self.arf.fracexpo  # phot/keV
+        phrate  = self.arf.apply_arf(mflux)  # phot/s per bin
+        phots   = phrate * self.exposure * self.arf.fracexpo  # phot per bin
         # 2. Apply RMF
         result = self.rmf.apply_rmf(phots)  # counts per bin
         return result
@@ -53,14 +53,14 @@ class XSpectrum(object):
     def _return_in_units(self, unit):
         assert unit in ALLOWED_UNITS
         if unit == self.bin_unit:
-            return (self.bin_lo.value, self.bin_hi.value, self.bin_mid.value, self.counts)
+            return (self.bin_lo, self.bin_hi, self.bin_mid, self.counts)
         else:
             # Need to use reverse values if the bins are listed in increasing order
             new_lo, sl = _Angs_keV(self.bin_hi)
             new_hi, sl = _Angs_keV(self.bin_lo)
             new_mid = 0.5 * (new_lo + new_hi)
             new_cts = self.counts[sl]
-            return (new_lo.value, new_hi.value, new_mid.value, new_cts)
+            return (new_lo, new_hi, new_mid, new_cts)
 
     def plot(self, ax, xunit=si.keV, **kwargs):
         lo, hi, mid, cts = self._return_in_units(xunit)
@@ -86,8 +86,8 @@ class XSpectrum(object):
             print("WARNING: %s is not a supported bin unit" % bin_unit)
             self.bin_unit = 1.0
 
-        self.bin_lo   = np.array(data.field("BIN_LO")) * self.bin_unit
-        self.bin_hi   = np.array(data.field("BIN_HI")) * self.bin_unit
+        self.bin_lo   = np.array(data.field("BIN_LO"))
+        self.bin_hi   = np.array(data.field("BIN_HI"))
         self.counts   = data['COUNTS']
         self.rmf_file = this_dir + "/" + ff[1].header['RESPFILE']
         self.arf_file = this_dir + "/" + ff[1].header['ANCRFILE']

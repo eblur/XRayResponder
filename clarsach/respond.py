@@ -17,8 +17,8 @@ def _Angs_keV(q):
 
     Parameters
     ----------
-    q : Quantity
-        An array with astropy units attached
+    q : numpy.ndarry
+        An array containing the array of interest (either keV or Angs)
 
     Returns
     -------
@@ -30,8 +30,6 @@ def _Angs_keV(q):
         Is either [::1] or [::-1] (depending on order of input q)
         This output is helpful for sorting data related to q
     """
-    assert q.unit in ALLOWED_UNITS
-
     def _is_monotonically_increasing(x):
         return all(x[1:] > x[:-1])
 
@@ -42,14 +40,7 @@ def _Angs_keV(q):
     if _is_monotonically_increasing(q):
         sl = slice(None, None, -1)
 
-    if q.unit in ANGS:
-        new_unit = si.keV
-    elif q.unit in KEV:
-        new_unit = si.Angstrom
-    else:
-        new_unit = 1.0
-
-    result = CONST_HC/q.value[sl] * new_unit
+    result = CONST_HC/q[sl]
     return result, sl
 
 class RMF(object):
@@ -313,8 +304,8 @@ class ARF(object):
             print("WARNING: %s is not a supported bin unit" % bin_unit)
             self.bin_unit = 1.0
 
-        self.bin_lo  = np.array(data.field("ENERG_LO")) * self.bin_unit
-        self.bin_hi = np.array(data.field("ENERG_HI")) * self.bin_unit
+        self.bin_lo  = np.array(data.field("ENERG_LO"))
+        self.bin_hi = np.array(data.field("ENERG_HI"))
         self.specresp = np.array(data.field("SPECRESP"))
 
         if "FRACEXPO" in data.columns.names:
