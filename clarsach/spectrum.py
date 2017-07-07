@@ -53,7 +53,7 @@ class XSpectrum(object):
     def _return_in_units(self, unit):
         assert unit in ALLOWED_UNITS
         if unit == self.bin_unit:
-            return (self.bin_lo, self.bin_hi, self.bin_mid, self.counts)
+            return (self.bin_lo.value, self.bin_hi.value, self.bin_mid.value, self.counts)
         else:
             # Need to use reverse values if the bins are listed in increasing order
             new_lo, sl = _Angs_keV(self.bin_hi)

@@ -4,7 +4,7 @@ import numpy as np
 import astropy.io.fits as fits
 from astropy.units import si
 
-__all__ = ["RMF", "ARF", "_Angs_keV"]
+__all__ = ["RMF", "ARF"]
 
 CONST_HC = 12.398418573430595   # Copied from ISIS, [keV angs]
 KEV      = ['kev','keV']
