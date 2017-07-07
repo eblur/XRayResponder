@@ -2,11 +2,55 @@
 
 import numpy as np
 import astropy.io.fits as fits
+from astropy.units import si
 
-__all__ = ["RMF", "ARF"]
+__all__ = ["RMF", "ARF", "_Angs_keV"]
 
-CONST_HC    = 12.398418573430595   # Copied from ISIS, [keV angs]
-ALLOWED_UNITS      = ['keV','angs','angstrom','kev']
+CONST_HC = 12.398418573430595   # Copied from ISIS, [keV angs]
+KEV      = ['kev','keV']
+ANGS     = ['angs','angstrom','Angstrom','angstroms','Angstroms']
+ALLOWED_UNITS = KEV + ANGS
+
+def _Angs_keV(q):
+    """
+    Convert between keV and angs using hc converted to units of keV Angs
+
+    Parameters
+    ----------
+    q : Quantity
+        An array with astropy units attached
+
+    Returns
+    -------
+    hc/q : numpy.ndarray
+        The converted values, monotonically increasing
+
+    sl   : slice
+        Slice used to ensure that the output is monotonically increasing
+        Is either [::1] or [::-1] (depending on order of input q)
+        This output is helpful for sorting data related to q
+    """
+    assert q.unit in ALLOWED_UNITS
+
+    def _is_monotonically_increasing(x):
+        return all(x[1:] > x[:-1])
+
+    # Sometimes angs bins listed in reverse angstrom values (to match energies),
+    # in which case, no need to reverse
+    sl = slice(None, None, 1)
+    # Need to use reverse values if the bins are listed in increasing order
+    if _is_monotonically_increasing(q):
+        sl = slice(None, None, -1)
+
+    if q.unit in ANGS:
+        new_unit = si.keV
+    elif q.unit in KEV:
+        new_unit = si.Angstrom
+    else:
+        new_unit = 1.0
+
+    result = CONST_HC/q.value[sl] * new_unit
+    return result, sl
 
 class RMF(object):
 
@@ -259,48 +303,46 @@ class ARF(object):
 
         # extract + store the attributes described in the docstring
 
-        self.bin_lo  = np.array(data.field("BIN_LO"))
-        self.bin_hi = np.array(data.field("BIN_HI"))
-        self.bin_unit = data.columns["BIN_LO"].unit
+        # Deal with units
+        bin_unit = data.columns["BIN_LO"].unit
+        if bin_unit in ANGS:
+            self.bin_unit = si.Angstrom
+        elif bin_unit in KEV:
+            self.bin_unit = si.keV
+        else:
+            print("WARNING: %s is not a supported bin unit" % bin_unit)
+            self.bin_unit = 1.0
+
+        self.bin_lo  = np.array(data.field("BIN_LO")) * self.bin_unit
+        self.bin_hi = np.array(data.field("BIN_HI")) * self.bin_unit
         self.specresp = np.array(data.field("SPECRESP"))
 
         if "FRACEXPO" in data.columns.names:
             self.fracexpo = data["FRACEXPO"]
         else:
             self.fracexpo = 1.0
+
+        # Let's just keep everything in keV units
+        if self.bin_unit in ANGS:
+            self._setbins_to_keV()
         return
 
-    @property
-    def is_monotonically_increasing(self):
-        return all(self.bin_lo[1:] > self.bin_lo[:-1])
+    def _setbins_to_keV(self):
+        assert self.bin_unit in ANGS
+        new_bhi, sl = _Angs_keV(self.bin_lo)
+        new_blo, sl = _Angs_keV(self.bin_hi)
+        new_eff  = self.specresp[sl]
+        new_frac = self.fracexpo
+        if np.size(self.fracexpo) > 1:
+            new_frac = self.fracexpo[sl]
 
-    def _change_units(self, unit):
-        assert unit in ALLOWED_UNITS
-        if unit == self.bin_unit:
-            return (self.bin_lo, self.bin_hi, self.bin_mid, self.counts)
-        else:
-            # Need to use reverse values if the bins are listed in increasing order
-            if self.is_monotonically_increasing:
-                sl  = slice(None, None, -1)
-            # Sometimes its listed in reverse angstrom values (to match energies),
-            # in which case, no need to reverse
-            else:
-                sl  = slice(None, None, 1)
-            new_lo  = CONST_HC/self.bin_hi[sl]
-            new_hi  = CONST_HC/self.bin_lo[sl]
-            new_eff = self.specresp[sl]
-            new_frac = self.fracexpo  # 1 if there is no fracexpo set
-            if np.size(self.fracexpo > 1):
-                new_frac = self.fracexpo[sl]
-            return (new_lo, new_hi, new_eff, new_frac)
-
-    def hard_set_units(self, unit):
-        new_lo, new_hi, new_eff, new_frac = self._change_units(unit)
-        self.bin_lo = new_lo
-        self.bin_hi = new_hi
-        self.bin_unit = unit
+        # Now hard set everything
+        self.bin_lo   = new_blo
+        self.bin_hi   = new_bhi
         self.specresp = new_eff
         self.fracexpo = new_frac
+        self.bin_unit = si.keV
+        return
 
     def apply_arf(self, spec):
         """
