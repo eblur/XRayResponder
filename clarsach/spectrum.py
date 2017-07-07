@@ -8,6 +8,7 @@ from astropy.units import si
 KEV      = ['kev','keV']
 ANGS     = ['angs','angstrom','Angstrom','angstroms','Angstroms']
 ALLOWED_UNITS = KEV + ANGS
+ALLOWED_TELESCOPES = ['HETG','ACIS']
 
 __all__ = ['XSpectrum']
 
