@@ -24,7 +24,7 @@ class XSpectrum(object):
         elif telescope == 'ACIS':
             self._read_chandra(filename)
 
-        if self.bin_unit != self.arf.e_unit:
+        if self.bin_unit != self.arf.bin_unit:
             print("Warning: ARF units and pha file units are not the same!!!")
 
         if self.bin_unit != self.rmf.energ_unit:
@@ -38,6 +38,7 @@ class XSpectrum(object):
         # Given a model flux spectrum, apply the response
         mrate  = self.arf.apply_arf(mflux)  # phot/s per bin
         mrate  *= self.exposure * self.arf.fracexpo  # phot per bin
+
         result = self.rmf.apply_rmf(mrate)  # counts per bin
         return result
 
@@ -57,12 +58,10 @@ class XSpectrum(object):
             # Need to use reverse values if the bins are listed in increasing order
             if self.is_monotonically_increasing:
                 sl  = slice(None, None, -1)
-                print("is monotonically increasing")
             # Sometimes its listed in reverse angstrom values (to match energies),
             # in which case, no need to reverse
             else:
                 sl  = slice(None, None, 1)
-                print("is NOT monotonically increasing")
             new_lo  = CONST_HC/self.bin_hi[sl]
             new_hi  = CONST_HC/self.bin_lo[sl]
             new_mid = 0.5 * (new_lo + new_hi)

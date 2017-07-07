@@ -5,6 +5,9 @@ import astropy.io.fits as fits
 
 __all__ = ["RMF", "ARF"]
 
+CONST_HC    = 12.398418573430595   # Copied from ISIS, [keV angs]
+ALLOWED_UNITS      = ['keV','angs','angstrom','kev']
+
 class RMF(object):
 
     def __init__(self, filename):
@@ -256,17 +259,48 @@ class ARF(object):
 
         # extract + store the attributes described in the docstring
 
-        self.e_low  = np.array(data.field("ENERG_LO"))
-        self.e_high = np.array(data.field("ENERG_HI"))
-        self.e_unit = data.columns["ENERG_LO"].unit
+        self.bin_lo  = np.array(data.field("BIN_LO"))
+        self.bin_hi = np.array(data.field("BIN_HI"))
+        self.bin_unit = data.columns["BIN_LO"].unit
         self.specresp = np.array(data.field("SPECRESP"))
 
         if "FRACEXPO" in data.columns.names:
             self.fracexpo = data["FRACEXPO"]
         else:
             self.fracexpo = 1.0
-
         return
+
+    @property
+    def is_monotonically_increasing(self):
+        return all(self.bin_lo[1:] > self.bin_lo[:-1])
+
+    def _change_units(self, unit):
+        assert unit in ALLOWED_UNITS
+        if unit == self.bin_unit:
+            return (self.bin_lo, self.bin_hi, self.bin_mid, self.counts)
+        else:
+            # Need to use reverse values if the bins are listed in increasing order
+            if self.is_monotonically_increasing:
+                sl  = slice(None, None, -1)
+            # Sometimes its listed in reverse angstrom values (to match energies),
+            # in which case, no need to reverse
+            else:
+                sl  = slice(None, None, 1)
+            new_lo  = CONST_HC/self.bin_hi[sl]
+            new_hi  = CONST_HC/self.bin_lo[sl]
+            new_eff = self.specresp[sl]
+            new_frac = self.fracexpo  # 1 if there is no fracexpo set
+            if np.size(self.fracexpo > 1):
+                new_frac = self.fracexpo[sl]
+            return (new_lo, new_hi, new_eff, new_frac)
+
+    def hard_set_units(self, unit):
+        new_lo, new_hi, new_eff, new_frac = self._change_units(unit)
+        self.bin_lo = new_lo
+        self.bin_hi = new_hi
+        self.bin_unit = unit
+        self.specresp = new_eff
+        self.fracexpo = new_frac
 
     def apply_arf(self, spec):
         """
