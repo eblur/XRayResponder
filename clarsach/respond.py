@@ -293,6 +293,7 @@ class ARF(object):
         hdr = h.header
         hdulist.close()
 
+        self.data = hdulist
         # extract + store the attributes described in the docstring
 
         self.e_low  = np.array(data.field("ENERG_LO"))
