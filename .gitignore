@@ -7,4 +7,4 @@
 *.rmf
 *.grmf
 *.gz
-data/tgcat/*
+data/*
