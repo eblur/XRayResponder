@@ -2,8 +2,47 @@
 
 import numpy as np
 import astropy.io.fits as fits
+from astropy.units import si
 
 __all__ = ["RMF", "ARF"]
+
+CONST_HC = 12.398418573430595   # Copied from ISIS, [keV angs]
+KEV      = ['kev','keV']
+ANGS     = ['angs','angstrom','Angstrom','angstroms','Angstroms']
+ALLOWED_UNITS = KEV + ANGS
+
+def _Angs_keV(q):
+    """
+    Convert between keV and angs using hc converted to units of keV Angs
+
+    Parameters
+    ----------
+    q : numpy.ndarry
+        An array containing the array of interest (either keV or Angs)
+
+    Returns
+    -------
+    hc/q : numpy.ndarray
+        The converted values, monotonically increasing
+
+    sl   : slice
+        Slice used to ensure that the output is monotonically increasing
+        Is either [::1] or [::-1] (depending on order of input q)
+        This output is helpful for sorting data related to q
+    """
+    def _is_monotonically_increasing(x):
+        return all(x[1:] > x[:-1])
+
+    # Sometimes angs bins listed in reverse angstrom values (to match energies),
+    # in which case, no need to reverse
+    sl = slice(None, None, 1)
+    # Need to use reverse values if the bins are listed in increasing order
+    if _is_monotonically_increasing(q):
+        sl = slice(None, None, -1)
+
+    result = CONST_HC/q[sl]
+    return result, sl
+
 
 class RMF(object):
 

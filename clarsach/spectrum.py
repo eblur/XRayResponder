@@ -1,16 +1,17 @@
 import numpy as np
 import os
 
-from clarsach.respond import RMF, ARF
+from clarsach.respond import RMF, ARF, _Angs_keV
 from astropy.io import fits
+from astropy.units import si
 
 __all__ = ['XSpectrum']
 
-ALLOWED_UNITS      = ['keV','angs','angstrom','kev']
-ALLOWED_TELESCOPES = ['HETG','ACIS']
+KEV      = ['kev','keV']
+ANGS     = ['angs','angstrom','Angstrom','angstroms','Angstroms']
 
-CONST_HC    = 12.398418573430595   # Copied from ISIS, [keV angs]
-UNIT_LABELS = dict(zip(ALLOWED_UNITS, ['Energy (keV)', 'Wavelength (angs)']))
+ALLOWED_UNITS = KEV + ANGS
+ALLOWED_TELESCOPES = ['HETG','ACIS']
 
 # Not a very smart reader, but it works for HETG
 class XSpectrum(object):
@@ -45,46 +46,6 @@ class XSpectrum(object):
     def bin_mid(self):
         return 0.5 * (self.bin_lo + self.bin_hi)
 
-    @property
-    def is_monotonically_increasing(self):
-        return all(self.bin_lo[1:] > self.bin_lo[:-1])
-
-    def _change_units(self, unit):
-        assert unit in ALLOWED_UNITS
-        if unit == self.bin_unit:
-            return (self.bin_lo, self.bin_hi, self.bin_mid, self.counts)
-        else:
-            # Need to use reverse values if the bins are listed in increasing order
-            if self.is_monotonically_increasing:
-                sl  = slice(None, None, -1)
-                print("is monotonically increasing")
-            # Sometimes its listed in reverse angstrom values (to match energies),
-            # in which case, no need to reverse
-            else:
-                sl  = slice(None, None, 1)
-                print("is NOT monotonically increasing")
-            new_lo  = CONST_HC/self.bin_hi[sl]
-            new_hi  = CONST_HC/self.bin_lo[sl]
-            new_mid = 0.5 * (new_lo + new_hi)
-            new_cts = self.counts[sl]
-            return (new_lo, new_hi, new_mid, new_cts)
-
-    def hard_set_units(self, unit):
-        new_lo, new_hi, new_mid, new_cts = self._change_units(unit)
-        self.bin_lo = new_lo
-        self.bin_hi = new_hi
-        self.counts = new_cts
-        self.bin_unit = unit
-
-    def plot(self, ax, xunit='keV', **kwargs):
-        lo, hi, mid, cts = self._change_units(xunit)
-        counts_err       = np.sqrt(cts)
-        ax.errorbar(mid, cts, yerr=counts_err,
-                    ls='', marker=None, color='k', capsize=0, alpha=0.5)
-        ax.step(lo, cts, where='post', **kwargs)
-        ax.set_xlabel(UNIT_LABELS[xunit])
-        ax.set_ylabel('Counts')
-
     def _read_chandra(self, filename):
         this_dir = os.path.dirname(os.path.abspath(filename))
         ff   = fits.open(filename)
@@ -99,3 +60,37 @@ class XSpectrum(object):
         self.arf = ARF(self.arf_file)
         self.exposure = ff[1].header['EXPOSURE']  # seconds
         ff.close()
+
+    def _return_in_units(self, unit):
+        assert unit in ALLOWED_UNITS
+        if unit == self.bin_unit:
+            return (self.bin_lo, self.bin_hi, self.bin_mid, self.counts)
+        else:
+            # Need to use reverse values if the bins are listed in increasing order
+            new_lo, sl = _Angs_keV(self.bin_hi)
+            new_hi, sl = _Angs_keV(self.bin_lo)
+            new_mid = 0.5 * (new_lo + new_hi)
+            new_cts = self.counts[sl]
+            return (new_lo, new_hi, new_mid, new_cts)
+
+    def _setbins_to_keV(self):
+        assert self.bin_unit in ANGS
+        new_bhi, sl = _Angs_keV(self.bin_lo)
+        new_blo, sl = _Angs_keV(self.bin_hi)
+        new_cts  = self.counts[sl]
+
+        # Now hard set everything
+        self.bin_lo = new_blo
+        self.bin_hi = new_bhi
+        self.counts = new_cts
+        self.bin_unit = si.keV
+        return
+
+    def plot(self, ax, xunit='keV', **kwargs):
+        lo, hi, mid, cts = self._change_units(xunit)
+        counts_err       = np.sqrt(cts)
+        ax.errorbar(mid, cts, yerr=counts_err,
+                    ls='', marker=None, color='k', capsize=0, alpha=0.5)
+        ax.step(lo, cts, where='post', **kwargs)
+        ax.set_xlabel(UNIT_LABELS[xunit])
+        ax.set_ylabel('Counts')
