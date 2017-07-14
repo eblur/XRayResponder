@@ -1,5 +1,5 @@
 #!/usr/bin/env python
 '''Clarsach'''
-from . import spectrum
+from .spectrum import XSpectrum
 from .respond import RMF, ARF
 from .models import *
