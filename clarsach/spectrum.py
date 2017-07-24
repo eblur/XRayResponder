@@ -38,7 +38,7 @@ class XSpectrum(object):
     def apply_resp(self, mflux):
         # Given a model flux spectrum, apply the response
         mrate  = self.arf.apply_arf(mflux)  # phot/s per bin
-        mrate  *= self.exposure * self.arf.fracexpo  # phot per bin
+        mrate  *= self.exposure  # phot per bin
         result = self.rmf.apply_rmf(mrate)  # counts per bin
         return result
 
