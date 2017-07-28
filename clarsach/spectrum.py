@@ -25,10 +25,10 @@ class XSpectrum(object):
         elif telescope == 'ACIS':
             self._read_chandra(filename)
 
-        if self.bin_unit != self.arf.e_unit:
+        if (self.arf is not None) and (self.bin_unit != self.arf.e_unit):
             print("Warning: ARF units and pha file units are not the same!!!")
 
-        if self.bin_unit != self.rmf.energ_unit:
+        if (self.rmf is not None) and (self.bin_unit != self.rmf.energ_unit):
             print("Warning: RMF units and pha file units are not the same!!!")
 
         return
