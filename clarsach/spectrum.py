@@ -66,7 +66,7 @@ class XSpectrum(object):
 
         If no ARF file exists, it will return the model flux after applying the RMF
         If no RMF file exists, it will return the model flux after applying the ARF (with a warning)
-        If neither ARF and RMF exists, it will return the model flux spectrum (with a warning)
+        If no ARF and no RMF, it will return the model flux spectrum (with a warning)
         """
 
         if self.arf is not None:
