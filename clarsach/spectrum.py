@@ -31,16 +31,48 @@ class XSpectrum(object):
         if self.bin_unit != self.rmf.energ_unit:
             print("Warning: RMF units and pha file units are not the same!!!")
 
+        return
+
     def __store_path(self, filename):
         self.path = '/'.join(filename.split('/')[0:-1]) + "/"
         return
 
-    def apply_resp(self, mflux):
-        # Given a model flux spectrum, apply the response
-        mrate  = self.arf.apply_arf(mflux)  # phot/s per bin
-        mrate  *= self.exposure * self.arf.fracexpo  # phot per bin
-        result = self.rmf.apply_rmf(mrate)  # counts per bin
-        return result
+    def apply_resp(self, mflux, exposure=None):
+        """
+        Given a model flux spectrum, apply the response. In cases where the
+        spectrum has both an ARF and an RMF, apply both. Otherwise, apply
+        whatever response is in RMF.
+
+        The model flux spectrum *must* be created using the same units and
+        bins as in the ARF (where the ARF exists)!
+
+        Parameters
+        ----------
+        mflux : iterable
+            A list or array with the model flux values in ergs/keV/s/cm^-2
+
+        exposure : float, default None
+            By default, the exposure stored in the ARF will be used to compute
+            the total counts per bin over the effective observation time.
+            In cases where this might be incorrect (e.g. for simulated spectra
+            where the pha file might have a different exposure value than the
+            ARF), this keyword provides the functionality to override the
+            default behaviour and manually set the exposure time to use.
+
+        Returns
+        -------
+        count_model : numpy.ndarray
+            The model spectrum in units of counts/bin
+        """
+
+        if self.arf is not None:
+            mrate  = self.arf.apply_arf(mflux, exposure=exposure)
+        else:
+            mrate = mflux
+
+        count_model = self.rmf.apply_rmf(mrate)
+
+        return count_model
 
     @property
     def bin_mid(self):
@@ -84,6 +116,8 @@ class XSpectrum(object):
         self.bin_hi = new_bhi
         self.counts = new_cts
         self.bin_unit = si.keV
+        return
+
         return
 
     def plot(self, ax, xunit='keV', **kwargs):
