@@ -92,6 +92,7 @@ class XSpectrum(object):
         ff   = fits.open(filename)
         data = ff[1].data
 
+        print(row)
         if row is not None:
             assert row > 0
             self.bin_lo = data['BIN_LO'][row-1]
@@ -100,9 +101,9 @@ class XSpectrum(object):
             tgp, tgm    = data['TG_PART'][row-1], data['TG_M'][row-1]
             self.name   = "%s m=%d" % (TG_PART[tgp], tgm)
         else:
-            self.bin_lo = data['BIN_LO'][row-1]
-            self.bin_hi = data['BIN_HI'][row-1]
-            self.counts = data['COUNTS'][row-1]
+            self.bin_lo = data['BIN_LO']
+            self.bin_hi = data['BIN_HI']
+            self.counts = data['COUNTS']
 
         # Deal with ARF and RMF
         try:
