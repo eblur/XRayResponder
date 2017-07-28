@@ -15,11 +15,7 @@ ALLOWED_TELESCOPES = ['HETG','ACIS']
 
 # Not a very smart reader, but it works for HETG
 class XSpectrum(object):
-<<<<<<< HEAD
-    def __init__(self, filename, telescope='HETG', row=None):
-=======
-    def __init__(self, filename, telescope='HETG', arf=None, rmf=None):
->>>>>>> cbd99b8c60b5771022577ca7b53293199c2517ce
+    def __init__(self, filename, telescope='HETG', row=None, arf=None, rmf=None):
         assert telescope in ALLOWED_TELESCOPES
 
         self.__store_path(filename)
