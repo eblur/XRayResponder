@@ -47,8 +47,10 @@ def _Angs_keV(q):
 class RMF(object):
 
     def __init__(self, filename):
-
-        self._load_rmf(filename)
+        if filename is None:
+            return None
+        else:
+            self._load_rmf(filename)
         pass
 
     def _load_rmf(self, filename):
@@ -295,8 +297,10 @@ class RMF(object):
 class ARF(object):
 
     def __init__(self, filename):
-
-        self._load_arf(filename)
+        if filename is None:
+            return None
+        else:
+            self._load_arf(filename)
         pass
 
     def _load_arf(self, filename):
