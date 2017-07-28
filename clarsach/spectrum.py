@@ -15,7 +15,7 @@ ALLOWED_TELESCOPES = ['HETG','ACIS']
 
 # Not a very smart reader, but it works for HETG
 class XSpectrum(object):
-    def __init__(self, filename, telescope='HETG', row=None, arf=None, rmf=None):
+    def __init__(self, filename, telescope='HETG', row=None, arf=None, rmf=None, verbose=True):
         assert telescope in ALLOWED_TELESCOPES
 
         self.__store_path(filename)
@@ -25,11 +25,12 @@ class XSpectrum(object):
         elif telescope == 'ACIS':
             self._read_chandra(filename, arf=arf, rmf=rmf)
 
-        if (self.arf is not None) and (self.bin_unit != self.arf.e_unit):
-            print("Warning: ARF units and pha file units are not the same!!!")
+        if verbose:
+            if (self.arf is not None) and (self.bin_unit != self.arf.e_unit):
+                print("Warning: ARF units and pha file units are not the same!!!")
 
-        if (self.rmf is not None) and (self.bin_unit != self.rmf.energ_unit):
-            print("Warning: RMF units and pha file units are not the same!!!")
+            if (self.rmf is not None) and (self.bin_unit != self.rmf.energ_unit):
+                print("Warning: RMF units and pha file units are not the same!!!")
 
         return
 
@@ -122,7 +123,6 @@ class XSpectrum(object):
         except:
             self.arf_file = arf
 
-        print(self.rmf_file, self.arf_file)
         self.rmf = RMF(self.rmf_file)
         self.arf = ARF(self.arf_file)
         self.bin_unit = data.columns['BIN_LO'].unit
