@@ -15,13 +15,13 @@ ALLOWED_TELESCOPES = ['HETG','ACIS']
 
 # Not a very smart reader, but it works for HETG
 class XSpectrum(object):
-    def __init__(self, filename, telescope='HETG'):
+    def __init__(self, filename, telescope='HETG', row=None):
         assert telescope in ALLOWED_TELESCOPES
 
         self.__store_path(filename)
 
         if telescope == 'HETG':
-            self._read_chandra(filename)
+            self._read_chandra(filename, row=row)
         elif telescope == 'ACIS':
             self._read_chandra(filename)
 
@@ -85,14 +85,25 @@ class XSpectrum(object):
     def bin_mid(self):
         return 0.5 * (self.bin_lo + self.bin_hi)
 
-    def _read_chandra(self, filename):
+    def _read_chandra(self, filename, row=None):
+        TG_PART = {1:'HEG', 2:'MEG'}
         this_dir = os.path.dirname(os.path.abspath(filename))
         ff   = fits.open(filename)
         data = ff[1].data
-        self.bin_lo   = data['BIN_LO']
-        self.bin_hi   = data['BIN_HI']
-        self.bin_unit = data.columns['BIN_LO'].unit
-        self.counts   = data['COUNTS']
+
+        if row is not None:
+            assert row > 0
+            self.bin_lo = data['BIN_LO'][row-1]
+            self.bin_hi = data['BIN_HI'][row-1]
+            self.counts = data['COUNTS'][row-1]
+            tgp, tgm    = data['TG_PART'][row-1], data['TG_M'][row-1]
+            self.name   = "%s m=%d" % (TG_PART[tgp], tgm)
+        else:
+            self.bin_lo = data['BIN_LO'][row-1]
+            self.bin_hi = data['BIN_HI'][row-1]
+            self.counts = data['COUNTS'][row-1]
+
+        # Deal with ARF and RMF
         try:
             self.rmf_file = this_dir + "/" + ff[1].header['RESPFILE']
             self.rmf = RMF(self.rmf_file)
@@ -103,6 +114,8 @@ class XSpectrum(object):
             self.arf = ARF(self.arf_file)
         except:
             self.arf = None
+
+        self.bin_unit = data.columns['BIN_LO'].unit
         self.exposure = ff[1].header['EXPOSURE']  # seconds
         ff.close()
 
