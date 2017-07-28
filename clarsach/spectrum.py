@@ -15,7 +15,11 @@ ALLOWED_TELESCOPES = ['HETG','ACIS']
 
 # Not a very smart reader, but it works for HETG
 class XSpectrum(object):
+<<<<<<< HEAD
     def __init__(self, filename, telescope='HETG', row=None):
+=======
+    def __init__(self, filename, telescope='HETG', arf=None, rmf=None):
+>>>>>>> cbd99b8c60b5771022577ca7b53293199c2517ce
         assert telescope in ALLOWED_TELESCOPES
 
         self.__store_path(filename)
@@ -106,15 +110,15 @@ class XSpectrum(object):
         # Deal with ARF and RMF
         try:
             self.rmf_file = this_dir + "/" + ff[1].header['RESPFILE']
-            self.rmf = RMF(self.rmf_file)
         except:
-            self.rmf = None
+            self.rmf_file = rmf
         try:
             self.arf_file = this_dir + "/" + ff[1].header['ANCRFILE']
-            self.arf = ARF(self.arf_file)
         except:
-            self.arf = None
+            self.arf_file = arf
 
+        self.rmf = RMF(self.rmf_file)
+        self.arf = ARF(self.arf_file)
         self.bin_unit = data.columns['BIN_LO'].unit
         self.exposure = ff[1].header['EXPOSURE']  # seconds
         ff.close()
