@@ -21,9 +21,9 @@ class XSpectrum(object):
         self.__store_path(filename)
 
         if telescope == 'HETG':
-            self._read_chandra(filename, row=row)
+            self._read_chandra(filename, arf=arf, rmf=rmf, row=row)
         elif telescope == 'ACIS':
-            self._read_chandra(filename)
+            self._read_chandra(filename, arf=arf, rmf=rmf)
 
         if (self.arf is not None) and (self.bin_unit != self.arf.e_unit):
             print("Warning: ARF units and pha file units are not the same!!!")
@@ -85,7 +85,7 @@ class XSpectrum(object):
     def bin_mid(self):
         return 0.5 * (self.bin_lo + self.bin_hi)
 
-    def _read_chandra(self, filename, row=None):
+    def _read_chandra(self, filename, arf=None, rmf=None, row=None):
         TG_PART = {1:'HEG', 2:'MEG'}
         this_dir = os.path.dirname(os.path.abspath(filename))
         ff   = fits.open(filename)
@@ -105,14 +105,24 @@ class XSpectrum(object):
 
         # Deal with ARF and RMF
         try:
-            self.rmf_file = this_dir + "/" + ff[1].header['RESPFILE']
+            fname = ff[1].header['RESPFILE']
+            if fname != 'none':
+                self.rmf_file = this_dir + "/" + fname
+            else:
+                self.rmf_file = rmf
         except:
             self.rmf_file = rmf
+
         try:
-            self.arf_file = this_dir + "/" + ff[1].header['ANCRFILE']
+            fname = ff[1].header['ANCRFILE']
+            if fname != 'none':
+                self.arf_file = this_dir + "/" + fname
+            else:
+                self.arf_file = arf
         except:
             self.arf_file = arf
 
+        print(self.rmf_file, self.arf_file)
         self.rmf = RMF(self.rmf_file)
         self.arf = ARF(self.arf_file)
         self.bin_unit = data.columns['BIN_LO'].unit
