@@ -63,6 +63,10 @@ class XSpectrum(object):
         -------
         count_model : numpy.ndarray
             The model spectrum in units of counts/bin
+
+        If no ARF file exists, it will return the model flux after applying the RMF
+        If no RMF file exists, it will return the model flux after applying the ARF (with a warning)
+        If neither ARF and RMF exists, it will return the model flux spectrum (with a warning)
         """
 
         if self.arf is not None:
@@ -70,9 +74,12 @@ class XSpectrum(object):
         else:
             mrate = mflux
 
-        count_model = self.rmf.apply_rmf(mrate)
-
-        return count_model
+        if self.rmf is not None:
+            count_model = self.rmf.apply_rmf(mrate)
+            return count_model
+        else:
+            print("Caution: no response file specified")
+            return mrate
 
     @property
     def bin_mid(self):
@@ -86,10 +93,16 @@ class XSpectrum(object):
         self.bin_hi   = data['BIN_HI']
         self.bin_unit = data.columns['BIN_LO'].unit
         self.counts   = data['COUNTS']
-        self.rmf_file = this_dir + "/" + ff[1].header['RESPFILE']
-        self.arf_file = this_dir + "/" + ff[1].header['ANCRFILE']
-        self.rmf = RMF(self.rmf_file)
-        self.arf = ARF(self.arf_file)
+        try:
+            self.rmf_file = this_dir + "/" + ff[1].header['RESPFILE']
+            self.rmf = RMF(self.rmf_file)
+        else:
+            self.rmf = None
+        try:
+            self.arf_file = this_dir + "/" + ff[1].header['ANCRFILE']
+            self.arf = ARF(self.arf_file)
+        else:
+            self.arf = None
         self.exposure = ff[1].header['EXPOSURE']  # seconds
         ff.close()
 
