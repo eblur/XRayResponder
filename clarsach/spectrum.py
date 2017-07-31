@@ -105,6 +105,8 @@ class XSpectrum(object):
             self.counts = data['COUNTS']
 
         # Deal with ARF and RMF
+        # If the filename specified is 'none', will use user defined arf and rmf filenames
+        # By default, the arf and rmf will be set to None (see kwargs in __init__ function call)
         try:
             fname = ff[1].header['RESPFILE']
             if fname != 'none':
