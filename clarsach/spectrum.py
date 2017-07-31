@@ -92,7 +92,6 @@ class XSpectrum(object):
         ff   = fits.open(filename)
         data = ff[1].data
 
-        print(row)
         if row is not None:
             assert row > 0
             self.bin_lo = data['BIN_LO'][row-1]
@@ -110,6 +109,7 @@ class XSpectrum(object):
             fname = ff[1].header['RESPFILE']
             if fname != 'none':
                 self.rmf_file = this_dir + "/" + fname
+                self.rmf = RMF(self.rmf_file)
             else:
                 self.rmf_file = rmf
         except:
@@ -124,11 +124,23 @@ class XSpectrum(object):
         except:
             self.arf_file = arf
 
-        self.rmf = RMF(self.rmf_file)
-        self.arf = ARF(self.arf_file)
+        self._assign_arf(self.arf_file)
+        self._assign_rmf(self.rmf_file)
         self.bin_unit = data.columns['BIN_LO'].unit
         self.exposure = ff[1].header['EXPOSURE']  # seconds
         ff.close()
+
+    def _assign_arf(self, arf_inp):
+        if isinstance(arf_inp, str):
+            self.arf = ARF(arf_inp)
+        else:
+            self.arf = arf_inp
+
+    def _assign_rmf(self, rmf_inp):
+        if isinstance(rmf_inp, str):
+            self.rmf = RMF(rmf_inp)
+        else:
+            self.rmf = rmf_inp
 
     def _return_in_units(self, unit):
         assert unit in ALLOWED_UNITS
