@@ -47,7 +47,6 @@ def _Angs_keV(q):
 class RMF(object):
 
     def __init__(self, filename):
-
         self._load_rmf(filename)
         pass
 
@@ -168,8 +167,29 @@ class RMF(object):
         matrix_flat = np.hstack(matrix[nz_idx])
 
         # stack all nonzero rows in n_chan and f_chan
-        n_chan_flat = np.hstack(n_chan[nz_idx])
-        f_chan_flat = np.hstack(f_chan[nz_idx])
+        #n_chan_flat = np.hstack(n_chan[nz_idx])
+        #f_chan_flat = np.hstack(f_chan[nz_idx])
+
+        # some matrices actually have more elements
+        # than groups in `n_grp`, so we'll only pick out
+        # those values that have a correspondence in
+        # n_grp
+        f_chan_new = []
+        n_chan_new = []
+        for i,t in enumerate(nz_idx):
+            if t:
+                n = n_grp[i]
+                f = f_chan[i]
+                nc = n_chan[i]
+                if np.size(f) == 1:
+                    f_chan_new.append(f)
+                    n_chan_new.append(nc)
+                else:
+                    f_chan_new.append(f[:n])
+                    n_chan_new.append(nc[:n])
+
+        n_chan_flat = np.hstack(n_chan_new)
+        f_chan_flat = np.hstack(f_chan_new)
 
         # if n_chan is zero, we'll remove those as well.
         nz_idx2 = (n_chan_flat > 0)
@@ -242,32 +262,38 @@ class RMF(object):
 
             # loop over the current number of groups
             for j in range(current_num_groups):
-                # get the right index for the start of the counts array
-                # to put the data into
-                counts_idx = int(self.f_chan[k] - self.offset)
 
-                # this is the current number of channels to use
                 current_num_chans = int(self.n_chan[k])
 
-                # iterate k for next round
-                k += 1
+                if current_num_chans == 0:
+                    k += 1
+                    resp_idx += current_num_chans
+                    continue
 
-                # add the flux to the subarray of the counts array that starts with
-                # counts_idx and runs over current_num_chans channels
-                counts[counts_idx:counts_idx + current_num_chans] += self.matrix[
-                                                              resp_idx:resp_idx + current_num_chans] * \
-                                                              np.float(
-                                                                  source_bin_i)
-                # iterate the response index for next round
-                resp_idx += current_num_chans
 
-        return counts
+                else:
+                    # get the right index for the start of the counts array
+                    # to put the data into
+                    counts_idx = int(self.f_chan[k] - self.offset)
+                    # this is the current number of channels to use
+
+                    k += 1
+                    # add the flux to the subarray of the counts array that starts with
+                    # counts_idx and runs over current_num_chans channels
+                    counts[counts_idx:counts_idx +
+                                      current_num_chans] += self.matrix[resp_idx:resp_idx +
+                                                                                 current_num_chans] * \
+                                                                np.float(source_bin_i)
+                    # iterate the response index for next round
+                    resp_idx += current_num_chans
+
+
+        return counts[:self.detchans]
 
 
 class ARF(object):
 
     def __init__(self, filename):
-
         self._load_arf(filename)
         pass
 
@@ -301,6 +327,11 @@ class ARF(object):
         self.e_unit = data.columns["ENERG_LO"].unit
         self.specresp = np.array(data.field("SPECRESP"))
 
+        if "EXPOSURE" in list(hdr.keys()):
+            self.exposure = hdr["EXPOSURE"]
+        else:
+            self.exposure = 1.0
+
         if "FRACEXPO" in data.columns.names:
             self.fracexpo = data["FRACEXPO"]
         else:
@@ -308,7 +339,7 @@ class ARF(object):
 
         return
 
-    def apply_arf(self, spec):
+    def apply_arf(self, spec, exposure=None):
         """
         Fold the spectrum through the ARF.
 
@@ -321,6 +352,14 @@ class ARF(object):
         spec : numpy.ndarray
             The (model) spectrum to be folded
 
+        exposure : float, default None
+            Value for the exposure time. By default, `apply_arf` will use the
+            exposure keyword from the ARF file. If this exposure time is not
+            correct (for example when simulated spectra use a different exposure
+            time and the ARF from a real observation), one can override the
+            default exposure by setting the `exposure` keyword to the correct
+            value.
+
         Returns
         -------
         s_arf : numpy.ndarray
@@ -331,5 +370,7 @@ class ARF(object):
         assert spec.shape[0] == self.specresp.shape[0], "The input spectrum must " \
                                                       "be of same size as the " \
                                                       "ARF array."
-
-        return np.array(spec) * self.specresp
+        if exposure is None:
+            return np.array(spec) * self.specresp * self.exposure
+        else:
+            return np.array(spec) * self.specresp * exposure
