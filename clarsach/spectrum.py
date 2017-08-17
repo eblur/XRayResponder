@@ -87,6 +87,10 @@ class XSpectrum(object):
         return 0.5 * (self.bin_lo + self.bin_hi)
 
     def _read_acis(self, filename, arf=None, rmf=None):
+        this_dir = os.path.dirname(os.path.abspath(filename))
+        ff   = fits.open(filename)
+        data = ff[1].data
+
         return
 
     def _read_hetg(self, filename, arf=None, rmf=None, row=None):
@@ -115,22 +119,12 @@ class XSpectrum(object):
         if rmf is not None:
             self.rmf_file = rmf
         else:
-            try:
-                fname = ff[1].header['RESPFILE']
-                if fname == 'none': self.rmf_file = None
-                else: self.rmf_file = this_dir + "/" + fname
-            except:
-                self.rmf_file = None
+            self.rmf_file = _file_from_header(ff[1].header, 'RESPFILE', this_dir)
 
         if arf is not None:
             self.arf_file = arf
         else:
-            try:
-                fname = ff[1].header['ANCRFILE']
-                if fname == 'none': self.arf_file = None
-                else: self.arf_file = this_dir + "/" + fname
-            except:
-                self.arf_file = None
+            self.arf_file = _file_from_header(ff[1].header, 'ANCRFILE', this_dir)
 
         self._assign_arf(self.arf_file)
         self._assign_rmf(self.rmf_file)
@@ -185,3 +179,17 @@ class XSpectrum(object):
         ax.step(lo, cts, where='post', **kwargs)
         ax.set_xlabel(UNIT_LABELS[xunit])
         ax.set_ylabel('Counts')
+
+## ------------ Helper functions
+
+def _file_from_header(header, keyword, this_dir):
+    ## Search the FITS header for a filename under the keyword specified
+    ## If the FITS header does not include that keyword, returns None
+    result = None
+    try:
+        fname = header[keyword]
+        if fname != 'none':
+            result = this_dir + "/" + fname
+    except:
+        pass
+    return result
