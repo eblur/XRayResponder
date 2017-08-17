@@ -91,6 +91,25 @@ class XSpectrum(object):
         ff   = fits.open(filename)
         data = ff[1].data
 
+        if rmf is not None:
+            self.rmf_file = rmf
+        else:
+            self.rmf_file = _file_from_header(ff[1].header, 'RESPFILE', this_dir)
+
+        if arf is not None:
+            self.arf_file = arf
+        else:
+            self.arf_file = _file_from_header(ff[1].header, 'ANCRFILE', this_dir)
+
+        self._assign_arf(self.arf_file)
+        self._assign_rmf(self.rmf_file)
+
+        self.counts = data['COUNTS']
+        self.bin_lo = data['CHANNEL'] - 1.0  # it starts with 1
+        self.bin_hi = data['CHANNEL']
+        self.bin_unit = 'channel_number'
+        self.exposure = ff[1].header['EXPOSURE']  # seconds
+        ff.close()
         return
 
     def _read_hetg(self, filename, arf=None, rmf=None, row=None):
