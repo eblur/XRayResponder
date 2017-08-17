@@ -105,26 +105,29 @@ class XSpectrum(object):
             self.counts = data['COUNTS']
 
         # Deal with ARF and RMF
-        # If the filename specified is 'none', will use user defined arf and rmf filenames
+        # Allow user to override file choice at the start, otherwise read filenames from header
         # By default, the arf and rmf will be set to None (see kwargs in __init__ function call)
-        try:
-            fname = ff[1].header['RESPFILE']
-            if fname != 'none':
-                self.rmf_file = this_dir + "/" + fname
-                self.rmf = RMF(self.rmf_file)
-            else:
-                self.rmf_file = rmf
-        except:
+        # If the filename specified is 'none', the ARF or RMF will be set to None
+        # If the filename is not 'none', the appropriate file will be loaded automatically
+        if rmf is not None:
             self.rmf_file = rmf
+        else:
+            try:
+                fname = ff[1].header['RESPFILE']
+                if fname == 'none': self.rmf_file = None
+                else: self.rmf_file = this_dir + "/" + fname
+            except:
+                self.rmf_file = None
 
-        try:
-            fname = ff[1].header['ANCRFILE']
-            if fname != 'none':
-                self.arf_file = this_dir + "/" + fname
-            else:
-                self.arf_file = arf
-        except:
+        if arf is not None:
             self.arf_file = arf
+        else:
+            try:
+                fname = ff[1].header['ANCRFILE']
+                if fname == 'none': self.arf_file = None
+                else: self.arf_file = this_dir + "/" + fname
+            except:
+                self.arf_file = None
 
         self._assign_arf(self.arf_file)
         self._assign_rmf(self.rmf_file)
