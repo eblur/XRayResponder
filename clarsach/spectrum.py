@@ -124,7 +124,7 @@ class XSpectrum(object):
         else:
             try:
                 fname = ff[1].header['ANCRFILE']
-                if fname == 'none': self.rmf_file = None
+                if fname == 'none': self.arf_file = None
                 else: self.arf_file = this_dir + "/" + fname
             except:
                 self.arf_file = None
