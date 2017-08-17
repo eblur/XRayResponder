@@ -21,9 +21,9 @@ class XSpectrum(object):
         self.__store_path(filename)
 
         if telescope == 'HETG':
-            self._read_chandra(filename, arf=arf, rmf=rmf, row=row)
+            self._read_hetg(filename, arf=arf, rmf=rmf, row=row)
         elif telescope == 'ACIS':
-            self._read_chandra(filename, arf=arf, rmf=rmf)
+            self._read_acis(filename, arf=arf, rmf=rmf)
 
         if verbose:
             if (self.arf is not None) and (self.bin_unit != self.arf.e_unit):
@@ -86,7 +86,10 @@ class XSpectrum(object):
     def bin_mid(self):
         return 0.5 * (self.bin_lo + self.bin_hi)
 
-    def _read_chandra(self, filename, arf=None, rmf=None, row=None):
+    def _read_acis(self, filename, arf=None, rmf=None):
+        return
+
+    def _read_hetg(self, filename, arf=None, rmf=None, row=None):
         TG_PART = {1:'HEG', 2:'MEG'}
         this_dir = os.path.dirname(os.path.abspath(filename))
         ff   = fits.open(filename)
