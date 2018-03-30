@@ -31,6 +31,12 @@ class XSpectrum(object):
         if self.bin_unit != self.rmf.energ_unit:
             print("Warning: RMF units and pha file units are not the same!!!")
 
+        # Initial conditions for ARF and RMF files
+        self.arf_file = None
+        self.rmf_file = None
+        self.arf = None
+        self.rmf = None
+
         return
 
     def __store_path(self, filename):
@@ -86,11 +92,26 @@ class XSpectrum(object):
         self.bin_hi   = data['BIN_HI']
         self.bin_unit = data.columns['BIN_LO'].unit
         self.counts   = data['COUNTS']
-        self.rmf_file = this_dir + "/" + ff[1].header['RESPFILE']
-        self.arf_file = this_dir + "/" + ff[1].header['ANCRFILE']
-        self.rmf = RMF(self.rmf_file)
-        self.arf = ARF(self.arf_file)
         self.exposure = ff[1].header['EXPOSURE']  # seconds
+        # Attempt to read in ARFs and RMFs specified in FITS header
+        try:
+            rmf_prefix = ''
+            rmf_header = ff[1].header['RESPFILE']
+            if rmf_header[0] != '/':
+                rmf_prefix = this_dir + "/"
+            self.rmf_file = rmf_prefix + rmf_header
+            self.rmf = RMF(self.rmf_file)
+        except:
+            print("RMF file not found, rmf values set to None")
+        try:
+            arf_prefix = ''
+            arf_header = ff[1].header['ANCRFILE']
+            if arf_header[0] != '/':
+                arf_prefix = this_dir + "/"
+            self.arf_file = arf_prefix + arf_header
+            self.arf = ARF(self.arf_file)
+        except:
+            print("No ARF file found, rmf values set to None")
         ff.close()
 
     def _return_in_units(self, unit):
