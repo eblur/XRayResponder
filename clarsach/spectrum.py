@@ -31,12 +31,6 @@ class XSpectrum(object):
         if self.bin_unit != self.rmf.energ_unit:
             print("Warning: RMF units and pha file units are not the same!!!")
 
-        # Initial conditions for ARF and RMF files
-        self.arf_file = None
-        self.rmf_file = None
-        self.arf = None
-        self.rmf = None
-
         return
 
     def __store_path(self, filename):
@@ -104,6 +98,8 @@ class XSpectrum(object):
             self.rmf = RMF(self.rmf_file)
         except:
             print("RMF file not found, rmf values set to None")
+            self.rmf_file = None
+            self.rmf = None
         try:
             arf_prefix = ''
             arf_header = ff[1].header['ANCRFILE']
@@ -114,6 +110,8 @@ class XSpectrum(object):
             self.arf = ARF(self.arf_file)
         except:
             print("No ARF file found, arf values set to None")
+            self.arf_file = None
+            self.arf = None
         ff.close()
 
     def _return_in_units(self, unit):
