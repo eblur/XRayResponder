@@ -100,6 +100,7 @@ class XSpectrum(object):
             if rmf_header[0] != '/':
                 rmf_prefix = this_dir + "/"
             self.rmf_file = rmf_prefix + rmf_header
+            print("Reading RMF from {}".format(self.rmf_file))
             self.rmf = RMF(self.rmf_file)
         except:
             print("RMF file not found, rmf values set to None")
@@ -109,9 +110,10 @@ class XSpectrum(object):
             if arf_header[0] != '/':
                 arf_prefix = this_dir + "/"
             self.arf_file = arf_prefix + arf_header
+            print("Reading ARF from {}".format(self.arf_file))
             self.arf = ARF(self.arf_file)
         except:
-            print("No ARF file found, rmf values set to None")
+            print("No ARF file found, arf values set to None")
         ff.close()
 
     def _return_in_units(self, unit):
